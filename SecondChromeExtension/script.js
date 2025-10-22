@@ -21,15 +21,61 @@ chrome.webRequest.onBeforeRequest.addListener(
     []
 );
 */
+// Global declaration (must be 'let' to be reassigned)
+let trackingState = {}; 
+
+(async () => {
+    // 1. Await the storage retrieval and declare the 'stored' variable (Fix A)
+    const stored = await chrome.storage.local.get(['trackingState']); 
+
+    // 2. Initialize the global trackingState object (Fix B)
+    trackingState = stored.trackingState || {
+        timeDictionary: {},
+        lastActiveUrl: null,
+        lastActiveTime: Date.now()
+    };
+    
+    // 3. Save the initial state back to storage if it was just created (Fix C)
+    // This is necessary to ensure the initial current time is persistent.
+    await chrome.storage.local.set({ 
+        "trackingState": trackingState 
+    });
+
+    // 4. Log the result
+})();
 async function getCurrentTab() {
-        let queryOptions = { active: true, lastFocusedWindow: true };
-        // `tab` will either be a `tabs.Tab` instance or `undefined`.
-        let [tab] = await chrome.tabs.query(queryOptions);
-        if (tab && tab.url){
-            console.log(tab.url);
+    let queryOptions = { active: true, lastFocusedWindow: true };
+    // `tab` will either be a `tabs.Tab` instance or `undefined`.
+    let [tab] = await chrome.tabs.query(queryOptions);
+        // Add the time spent on the PREVIOUS tab to its total.
+        // time_spent is the duration the tab was active before the switch.
+    const stored = await chrome.storage.local.get('trackingState');
+    const trackingState = stored.trackingState; // Get the object
+    const data = trackingState.lastActiveTime;
+    const dictionary = trackingState.timeDictionary;
+    old_url = trackingState.lastActiveUrl;
+    const time_spent = Date.now() - data;
+    if (tab && tab.url){
+        if(dictionary[tab.url] === undefined){
+            dictionary[tab.url] = 0
         }
+        dictionary[tab.url] += time_spent;
+        //trackingState.lastActiveUrl = tab.url; 
+    }
+    trackingState.lastActiveTime = Date.now()
+    chrome.storage.local.set({ 
+        "trackingState": trackingState 
+    });
+    console.log(dictionary)
+}
+        
+            
+            // Reset the timer and the instance tracking (or simplify as in the full solution
+
         
        
-}
-setInterval(getCurrentTab,2000);
+
+chrome.tabs.onActivated.addListener((activeInfo)=>{
+    getCurrentTab();
+})
 
