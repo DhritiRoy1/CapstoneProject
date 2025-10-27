@@ -23,7 +23,9 @@ chrome.webRequest.onBeforeRequest.addListener(
 */
 // Global declaration (must be 'let' to be reassigned)
 let trackingState = {}; 
-
+chrome.storage.local.clear(function() {
+    console.log("Extension local storage cleared.");
+});
 (async () => {
     // 1. Await the storage retrieval and declare the 'stored' variable (Fix A)
     const stored = await chrome.storage.local.get(['trackingState']); 
@@ -53,20 +55,22 @@ async function getCurrentTab() {
     const trackingState = stored.trackingState; // Get the object
     const data = trackingState.lastActiveTime;
     const dictionary = trackingState.timeDictionary;
-    old_url = trackingState.lastActiveUrl;
+    const old_url = trackingState.lastActiveUrl;
     const time_spent = Date.now() - data;
-    if (tab && tab.url){
-        if(dictionary[tab.url] === undefined){
-            dictionary[tab.url] = 0
+    if (tab && tab.url && old_url!= null){
+        if(dictionary[old_url] === undefined){
+            dictionary[old_url] = 0
+              
         }
-        dictionary[tab.url] += time_spent;
+        dictionary[old_url] += time_spent;
         //trackingState.lastActiveUrl = tab.url; 
     }
-    trackingState.lastActiveTime = Date.now()
+    trackingState.lastActiveTime = Date.now();
+    trackingState.lastActiveUrl = tab.url;
     chrome.storage.local.set({ 
         "trackingState": trackingState 
     });
-    console.log(dictionary)
+    console.log(dictionary);
 }
         
             
