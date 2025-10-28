@@ -66,7 +66,9 @@ async function getCurrentTab() {
         //trackingState.lastActiveUrl = tab.url; 
     }
     trackingState.lastActiveTime = Date.now();
-    trackingState.lastActiveUrl = tab.url;
+    if (tab && tab.url){
+        trackingState.lastActiveUrl = tab.url;
+    }
     chrome.storage.local.set({ 
         "trackingState": trackingState 
     });
@@ -79,7 +81,8 @@ async function getCurrentTab() {
         
        
 
-chrome.tabs.onActivated.addListener((activeInfo)=>{
+chrome.tabs.onUpdated.addListener((activeInfo)=>{
     getCurrentTab();
 })
+
 
